@@ -116,6 +116,14 @@ let rec removeFirstComma screened items =
                  | _ -> removeFirstComma (screened@[x]) rest
     | [] -> List.rev screened  
 
+let rec removeSecondComma screened (items: string list) =
+    match items with
+    | x::a::rest -> match x.[(String.length x)-1], a.[0] with
+                    | ' ', ',' -> screened@x::rest
+                    | _ -> removeSecondComma (screened@[x]) (a::rest)
+    | x::rest -> removeSecondComma (screened@[x]) rest
+    | [] -> List.rev screened  
+
 let rec removeFirstSpace screened (items: string list) =
     match items with
     | [x] ->  screened@[x]
@@ -139,8 +147,7 @@ let rec findRuleOneComma input =
     | x::a::rest -> match x, a with
                     | ", ", a ->  let next = List.mapi (fun i b -> match (i <> 0) && (b=a) && (a.[0] <> ',') with
                                                                    | true -> ", " + b
-                                                                   | false -> b) input
-                                  let next = removeFirstComma [] next
+                                                                   | false -> b) (" "::[a]@rest)
                                   findRuleOneComma next
                     | _ -> x::(findRuleOneComma (a::rest))
     | x::rest -> x::(findRuleOneComma (rest))
@@ -152,7 +159,8 @@ let rec findRuleTwoComma (input: string list) =
     | x::a::rest -> match x, a, rest with
                     | x, ", ", rest -> let next = List.map (fun b -> match ((b=x) && (rest.[0] <> (".") && rest.[0] <> (","))) with
                                                                      | true -> b + ", "
-                                                                     | false -> b) input
+                                                                     | false -> b) ([x]@rest)
+                                       let next = removeSecondComma [] next
                                        next
                     | _ -> x::findRuleTwoComma (a::rest)
     | x::rest -> x::(findRuleTwoComma (rest))
@@ -162,23 +170,24 @@ let rec buildString list =
     match list with
     | [] -> "" 
     | head::tail -> head + (buildString tail)
-(*
+
 let ruleOne input =
     let s = Seq.toList input
-    let s = findRuleOneComma (buildSeq s [])
-    let s = removeAllSpaces s
-    let s = buildString s
+    let s = buildSeq s []
+    let s = findRuleOneComma s
+    //let s = removeAllSpaces s
+    //let s = buildString s
     s
-*)
 
 let ruleTwo input = 
     let s = Seq.toList input
     let s = findRuleTwoComma (buildSeq s [])
     //let s = removeAllSpaces s
-    //let s = buildString s
+    let s = buildString s
     s
 
-//"one, two two two, three there three one two. four."|> ruleOne |> ruleTwo;;
+//"one, two two two three blue, three one two. four. blue five."|> ruleOne |> ruleTwo;;
+//"one, two, two, two, three blue, three one, two. four. blue, five."
                                          
 
 let commaSprinkler input = //failwith "Not implemented"
